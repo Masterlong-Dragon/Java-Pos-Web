@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <title>库存管理</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+
+            background-image: url("https://api.likepoems.com/img/bing");
+            background-repeat: no-repeat;
+            background-size: cover;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px;
+            background-color: #fff;
+            border-radius: 4px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .product-list-container {
+            max-height: 300px;
+            overflow-y: scroll;
+        }
+
+        .table thead th {
+            position: sticky;
+            /* 设置表头为 sticky 定位 */
+            top: 0;
+            /* 将表头固定在顶部 */
+            background-color: #ffffff;
+            z-index: 1;
+        }
+    </style>
+</head>
+
+<script>
+    // 页面加载完成后执行
+    $(document).ready(function () {
+        // 获取产品列表并展示
+        getProductList();
+
+        // 添加产品表单提交事件
+        $("#addProductForm").submit(function (event) {
+            event.preventDefault();
+            addProduct();
+        });
+
+        // 更新产品表单提交事件
+        $("#updateProductForm").submit(function (event) {
+            event.preventDefault();
+            updateProduct();
+        });
+
+        // 删除产品表单提交事件
+        $("#removeProductForm").submit(function (event) {
+            event.preventDefault();
+            removeProduct();
+        });
+
+        // 搜索产品输入框监听事件
+        $("#searchProduct").on("input", function () {
+            searchProduct($(this).val());
+        });
+
+        // 分页输入框监听事件
+        $("#fromIndex, #toIndex").on("input", function () {
+            getProductList();
+        });
+    });
+
+    // 搜索产品
+    function searchProduct(keyword) {
+        // 发起搜索产品请求
+        $.post("/stock/search-product", {
+                keyword: keyword
+            })
+            .done(function (response) {
+                // 清空产品列表
+                $("#productList").empty();
+
+                // 遍历产品数据并添加到列表中
+                var productList = JSON.parse(response);
+                $.each(productList, function (index, product) {
+                    var row = $("<tr>");
+                    row.append($("<td>").text(product.id));
+                    row.append($("<td>").text(product.name));
+                    row.append($("<td>").text(product.price));
+                    row.append($("<td>").text(product.stock));
+                    row.append($("<td>").html(
+                        '<button class="btn btn-sm btn-primary" onclick="editProduct(' + product
+                        .id + ', \'' + product.name + '\', ' + product.price + ', ' + product
+                        .stock + ')">编辑</button>'
+                    ));
+                    $("#productList").append(row);
+                });
+            })
+            .fail(function () {
+                alert("搜索产品失败，请重试！");
+            });
+    }
+
+    // 获取产品列表
+    function getProductList() {
+        var fromIndex = parseInt($("#fromIndex").val());
+        var toIndex = parseInt($("#toIndex").val());
+
+        // 发起请求获取产品列表数据
+        $.post("/stock/get-products", {
+                fromIndex: fromIndex,
+                toIndex: toIndex
+            })
+            .done(function (response) {
+                // 将响应数据解析为JSON对象
+                var productList = JSON.parse(response);
+
+                // 清空产品列表
+                $("#productList").empty();
+
+                // 遍历产品数据并添加到列表中
+                $.each(productList, function (index, product) {
+                    var row = $("<tr>");
+                    row.append($("<td>").text(product.id));
+                    row.append($("<td>").text(product.name));
+                    row.append($("<td>").text(product.price));
+                    row.append($("<td>").text(product.stock));
+                    row.append($("<td>").html(
+                        '<button class="btn btn-sm btn-primary" onclick="editProduct(' + product
+                        .id + ', \'' + product.name + '\', ' + product.price + ', ' + product
+                        .stock + ')">编辑</button>'
+                    ));
+                    $("#productList").append(row);
+                });
+            })
+            .fail(function () {
+                alert("获取产品列表失败，请重试！");
+            });
+    }
+
+    // 添加产品
+    function addProduct() {
+        var productName = $("#productName").val();
+        var productPrice = parseFloat($("#productPrice").val());
+        var productStock = parseInt($("#productStock").val());
+
+        // 发起添加产品请求
+        $.post("/stock/add-product", {
+                name: productName,
+                price: productPrice,
+                stock: productStock
+            })
+            .done(function () {
+                // 添加成功后刷新产品列表
+                getProductList();
+                // 清空表单输入
+                $("#productName").val("");
+                $("#productPrice").val("");
+                $("#productStock").val("");
+            })
+            .fail(function () {
+                alert("添加产品失败，请重试！");
+            });
+    }
+
+    // 更新产品
+    function updateProduct() {
+        var productId = parseInt($("#updateProductId").val());
+        var productName = $("#updateProductName").val();
+        var productPrice = parseFloat($("#updateProductPrice").val());
+        var productStock = parseInt($("#updateProductStock").val());
+
+        // 发起更新产品请求
+        $.post("/stock/update-product", {
+                id: productId,
+                name: productName,
+                price: productPrice,
+                stock: productStock
+            })
+            .done(function () {
+                // 更新成功后刷新产品列表
+                getProductList();
+                // 清空表单输入
+                $("#updateProductId").val("");
+                $("#updateProductName").val("");
+                $("#updateProductPrice").val("");
+                $("#updateProductStock").val("");
+            })
+            .fail(function () {
+                alert("更新产品失败，请重试！");
+            });
+    }
+
+    // 删除产品
+    function removeProduct() {
+        var productId = parseInt($("#removeProductId").val());
+
+        // 发起删除产品请求
+        $.post("/stock/remove-product", {
+                id: productId
+            })
+            .done(function () {
+                // 删除成功后刷新产品列表
+                getProductList();
+                // 清空表单输入
+                $("#removeProductId").val("");
+            })
+            .fail(function () {
+                alert("删除产品失败，请重试！");
+            });
+    }
+
+    function editProduct(productId, productName, productPrice, productStock) {
+        // 将产品信息填充到表单中
+        $("#updateProductId").val(productId);
+        $("#updateProductName").val(productName);
+        $("#updateProductPrice").val(productPrice);
+        $("#updateProductStock").val(productStock);
+    }
+</script>
+
+
+<body>
+    <div class="container">
+        <h2><a href="/index" class="btn btn-link">
+                <i class="bi bi-caret-left"></i>
+            </a><!-- 返回按钮 -->
+            库存管理</h2>
+        <div class="mb-3">
+            <label for="searchProduct" class="form-label">搜索产品：</label>
+            <input type="text" class="form-control" id="searchProduct" placeholder="请输入产品名称">
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <h4>产品列表</h4>
+                <div class="product-list-container">
+                    <!-- 添加产品列表容器 -->
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>名称</th>
+                                <th>价格</th>
+                                <th>库存</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productList">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mb-3">
+                    <label for="fromIndex" class="form-label">显示范围：</label>
+                    <input type="number" class="form-control" id="fromIndex" min="0" value="0">
+                </div>
+                <div class="mb-3">
+                    <label for="toIndex" class="form-label">到：</label>
+                    <input type="number" class="form-control" id="toIndex" min="1" value="10">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h4>添加产品</h4>
+                <form id="addProductForm">
+                    <div class="mb-3">
+                        <label for="productName" class="form-label">名称：</label>
+                        <input type="text" class="form-control" id="productName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="productPrice" class="form-label">价格：</label>
+                        <input type="text" class="form-control" id="productPrice" pattern="[0-9]+(\.[0-9]+)?" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="productStock" class="form-label">库存：</label>
+                        <input type="number" class="form-control" id="productStock" required>
+                    </div>
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary">添加</button>
+                    </div>
+                </form>
+                <h4 class="mt-4">编辑产品</h4>
+                <form id="updateProductForm">
+                    <div class="mb-3">
+                        <label for="updateProductId" class="form-label">ID：</label>
+                        <input type="number" class="form-control" id="updateProductId" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="updateProductName" class="form-label">名称：</label>
+                        <input type="text" class="form-control" id="updateProductName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="updateProductPrice" class="form-label">价格：</label>
+                        <input type="text" class="form-control" id="updateProductPrice" pattern="[0-9]+(\.[0-9]+)?" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="updateProductStock" class="form-label">库存：</label>
+                        <input type="number" class="form-control" id="updateProductStock" required>
+                    </div>
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary">更新</button>
+                    </div>
+                </form>
+                <h4 class="mt-4">删除产品</h4>
+                <form id="removeProductForm">
+                    <div class="mb-3">
+                        <label for="removeProductId" class="form-label">ID：</label>
+                        <input type="number" class="form-control" id="removeProductId" required>
+                    </div>
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-danger">删除</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+
+
+</html>
