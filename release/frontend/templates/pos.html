@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <title>POS系统</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+
+            background-image: url("https://api.likepoems.com/img/bing");
+            background-repeat: no-repeat;
+            background-size: cover;
+        }
+
+        .table-container {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .table thead th {
+            position: sticky;
+            /* 设置表头为 sticky 定位 */
+            top: 0;
+            /* 将表头固定在顶部 */
+            background-color: #ffffff;
+            z-index: 1;
+        }
+
+        .input-group {
+            position: relative;
+            z-index: 0;
+        }
+
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px;
+            background-color: #fff;
+            border-radius: 4px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-control {
+            border-radius: 2px;
+        }
+
+        .btn {
+            border-radius: 2px;
+        }
+
+        .total {
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+
+    <script>
+        function submitForm(event) {
+            event.preventDefault(); // 阻止表单默认提交行为
+            var employeeId = $("#employeeId").val();
+
+            // 使用 AJAX 发送请求
+            $.ajax({
+                url: "/pos/submit-eid",
+                method: "POST",
+                data: {
+                    employeeId: employeeId
+                },
+                success: function (response) {
+                    window.location.href = "/pos"; // 跳转到 pos.html 页面
+                    alert("设置成功");
+                },
+                error: function (xhr, status, error) {
+                    // 请求失败，处理错误信息
+                    // 显示错误提示
+                    alert(xhr.responseText);
+                }
+            });
+        }
+
+        function submitCForm(event) {
+            event.preventDefault(); // 阻止表单默认提交行为
+            var customerId = $("#customerId").val();
+
+            // 使用 AJAX 发送请求
+            $.ajax({
+                url: "/pos/submit-cid",
+                method: "POST",
+                data: {
+                    customerId: customerId
+                },
+                success: function (response) {},
+                error: function (xhr, status, error) {
+                    // 请求失败，处理错误信息
+                    // 显示错误提示
+                    alert("会员信息读取错误");
+                }
+            });
+        }
+    </script>
+
+
+    <div class="container">
+
+        <h2>
+            <a href="/index" class="btn btn-link">
+                <i class="bi bi-caret-left"></i>
+            </a><!-- 返回按钮 -->
+            POS系统
+        </h2>
+
+        <div>
+            <form id="employeeForm" onsubmit="submitForm(event)" class="row align-items-center">
+                <div class="col-md-4 mb-4">
+                    <label for="employeeId">员工工号: ${employeeId}</label>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <input type="text" class="form-control" id="employeeId" name="employeeId" placeholder="请输入工号">
+                </div>
+                <div class="col-md-4 mb-4">
+                    <button type="submit" class="btn btn-primary">设置工号</button>
+                </div>
+            </form>
+        </div>
+
+
+
+        <!-- 结账模式 -->
+        <div id="checkoutMode">
+
+            <h5>商品列表</h5>
+            <div class="table-container">
+                <table class="table mb-4">
+                    <thead>
+                        <tr>
+                            <th scope="col">商品ID</th>
+                            <th scope="col">商品名</th>
+                            <th scope="col">单价</th>
+                            <th scope="col">数目</th>
+                            <th scope="col">总价格</th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="checkoutProductList">
+                        <!-- 这里使用后端数据填充表格 -->
+                    </tbody>
+                </table>
+            </div>
+
+
+            <h4>结账模式</h4>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-4">
+                        <label for="checkoutProductID" class="form-label">输入商品扫描ID</label>
+                        <input type="text" class="form-control" id="checkoutProductID" placeholder="请输入商品扫描ID">
+                    </div>
+                    <div class="mb-4">
+                        <label for="checkoutQuantity" class="form-label">输入商品数量</label>
+                        <input type="text" class="form-control" id="checkoutQuantity" placeholder="请输入商品数量">
+                    </div>
+                    <div class="mb-4">
+                        <button type="button" class="btn btn-primary"
+                            onclick="addProductToCheckoutList()">确认添加商品</button>
+                        <button type="button" class="btn btn-secondary" onclick="clearCheckoutForm()">清空</button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-4">
+                        <label for="checkoutTotal" class="form-label">总计</label>
+                        <input type="text" class="form-control total" id="totalAmount" readonly>
+                    </div>
+                    <div class="mb-4">
+                        <label for="checkoutPaymentAmount" class="form-label">输入支付金额</label>
+                        <input type="text" class="form-control" id="checkoutPaymentAmount" placeholder="请输入支付金额">
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-4">
+                        <label for="checkoutPaymentMode" class="form-label">支付模式</label>
+                        <select class="form-select" id="checkoutPaymentMode">
+                            <option value="Cash">现金</option>
+                            <option value="Mobile">移动支付</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <form id="customerForm" onsubmit="submitCForm(event)">
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <input type="text" class="form-control" id="customerId" name="customerId"
+                                    placeholder="会员账号">
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <button type="submit" class="btn btn-primary">设置顾客会员号</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <button type="button" class="btn btn-primary" id="submitOrder"
+                        onclick="confirmOrder()">确认订单</button>
+                </div>
+                <div class="col-md-6">
+                    <button type="button" class="btn btn-primary" id="pay" onclick="confirmCheckout()"
+                        disabled="disabled">支付</button>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script>
+        // 添加商品到订单列表
+        function addProductToCheckoutList() {
+            var productId = $("#checkoutProductID").val();
+            var quantity = $("#checkoutQuantity").val();
+
+            // 发送异步请求到后端添加商品到订单列表
+            $.post("/pos/add-product", {
+                    productId: productId,
+                    quantity: quantity
+                })
+                .done(function (response) {
+                    // 更新商品列表的显示
+                    $("#checkoutProductList").html(response);
+                    // 更新总金额的显示
+                    updateTotalAmount();
+                })
+                .fail(function () {
+                    // 处理请求失败的情况
+                    alert("请求失败");
+                });
+        }
+
+        // 更新总金额显示
+        function updateTotalAmount() {
+            // 发送异步请求到后端获取最新的总金额
+            $.post("/pos/get-total-amount")
+                .done(function (response) {
+                    // 更新总金额的显示
+                    $("#totalAmount").val(response);
+                })
+                .fail(function () {
+                    // 处理请求失败的情况
+                    alert("请求失败");
+                });
+        }
+
+        // 从订单列表移除商品
+        function removeProductFromCheckoutList(productId, quantity) {
+            // 发送异步请求到后端移除商品
+            $.post("/pos/remove-product", {
+                    productId: productId,
+                    quantity: quantity
+                })
+                .done(function (response) {
+                    // 更新商品列表的显示
+                    $("#checkoutProductList").html(response);
+                    // 更新总金额的显示
+                    updateTotalAmount();
+                })
+                .fail(function () {
+                    // 处理请求失败的情况
+                    alert("请求失败");
+                });
+        }
+
+        // 增加商品数量
+        function increaseQuantity(productId) {
+            var quantityElement = $("#quantity_" + productId);
+            var currentQuantity = parseInt(quantityElement.val());
+            var newQuantity = currentQuantity + 1;
+            quantityElement.val(newQuantity);
+
+            // 发送异步请求到后端更新商品数量
+            updateQuantity(productId, newQuantity);
+        }
+
+        // 减少商品数量
+        function decreaseQuantity(productId) {
+            var quantityElement = $("#quantity_" + productId);
+            var currentQuantity = parseInt(quantityElement.val());
+            if (currentQuantity > 1) {
+                var newQuantity = currentQuantity - 1;
+                quantityElement.val(newQuantity);
+
+                // 发送异步请求到后端更新商品数量
+                updateQuantity(productId, newQuantity);
+            }
+        }
+
+        // 更新商品数量
+        function updateQuantity(productId, newQuantity) {
+            // 发送异步请求到后端更新商品数量的逻辑
+            $.post("/pos/update-quantity", {
+                    productId: productId,
+                    quantity: newQuantity
+                })
+                .done(function (response) {
+                    // 请求成功后执行相应的操作
+                    var tableBody = document.getElementById("checkoutProductList");
+                    tableBody.innerHTML = response;
+                    // 更新总金额的显示
+                    updateTotalAmount();
+                })
+                .fail(function () {
+                    // 处理请求失败的情况
+                    alert("请求失败");
+                });
+        }
+
+        // 删除商品
+        function removeProduct(productId) {
+            // 发送异步请求到后端删除商品的逻辑
+            $.post("/pos/remove-product", {
+                    productId: productId
+                })
+                .done(function (response) {
+                    // 请求成功后更新页面内容
+                    var tableBody = document.getElementById("checkoutProductList");
+                    tableBody.innerHTML = response;
+                    // 更新总金额的显示
+                    updateTotalAmount();
+                })
+                .fail(function () {
+                    // 处理请求失败的情况
+                    alert("请求失败");
+                });
+        }
+
+        function clearCheckoutForm() {
+            // 清空结账模式的输入框和商品列表
+            $.post("/pos/clear-checkout", function (response) {
+                // 更新商品列表的显示
+                $("#checkoutProductList").html(response);
+                // 更新总金额
+                updateTotalAmount();
+            });
+        }
+
+        function confirmOrder() {
+            $("#submitOrder").attr("disabled", "disabled");
+            $.post("/pos/submit-order")
+                .done(function (response) {
+                    if (response.success) {
+                        alert("订单提交成功！订单号：" + response.orderId);
+                        $("#pay").removeAttr("disabled");
+                    } else {
+                        alert("订单提交失败，请重试！");
+                        $("#submitOrder").removeAttr("disabled");
+                    }
+                })
+                .fail(function (xhr, textStatus, errorThrown) {
+                    if (xhr.status === 400) {
+                        var errorMessage = xhr.responseText;
+                        alert("请求发生错误: " + errorMessage);
+                        $("#submitOrder").removeAttr("disabled");
+                    } else {
+                        alert("请求失败，请重试！");
+                        $("#submitOrder").removeAttr("disabled");
+                    }
+                });
+        }
+
+
+
+        function confirmCheckout() {
+            // 结账
+            var totalAmount = $("#checkoutPaymentAmount").val();
+            var paymentMode = document.getElementById("checkoutPaymentMode").value;
+            // 发送结账请求
+            $.post("/pos/checkout", {
+                amount: totalAmount,
+                mode: paymentMode
+            }).done(function (response) {
+                // 处理后端返回的结果
+                // 结账成功，显示成功提示
+                if (response.success) {
+                    alert("结账成功！订单号：" + response.orderId);
+                    clearCheckoutList();
+                } else {
+                    alert("结账失败，请重试！");
+                }
+                $("submitOrder").removeAttr("disabled");
+                // 清空订单列表
+            });
+
+        }
+
+        function clearCheckoutList() {
+            // 清空结账模式的商品列表和其他相关信息
+            // 直接清空
+            $("#checkoutProductList").html("");
+            $("#totalAmount").val("");
+            $("#checkoutPaymentAmount").val("");
+            $("#checkoutPaymentMode").val("Cash");
+            $("#checkoutProductID").val("");
+            $("#checkoutQuantity").val("");
+            $("#submitOrder").removeAttr("disabled");
+            $("#pay").attr("disabled", "disabled");
+        }
+
+        function addProductToRefundList() {
+            // 将输入的退款商品信息添加到退款模式的商品列表中
+        }
+
+        function clearRefundForm() {
+            // 清空退款模式的输入框和商品列表
+        }
+    </script>
+</body>
+
+</html>

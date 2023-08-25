@@ -13,6 +13,12 @@ a pos (point of sale) web demo using java backend.
 
 ---
 
+注意不能直接运行，要配合前端文件夹目录。
+
+详细信息请看release文件夹。
+
+---
+
  
 
 |      |                                         |
