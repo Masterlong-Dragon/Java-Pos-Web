@@ -2,7 +2,7 @@
 a pos (point of sale) web demo using java backend.
 ---
 用作我的课程项目（同时满足这三门课）：
-- 软件工程社会和职业问题
+- 软件开发环境与工具
 - 软件工程导论
 - 数据库系统和信息管理
 ---
